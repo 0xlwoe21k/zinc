@@ -105,7 +105,7 @@ func custion_bulk_import(target string,bulk_path string)  {
 	startTime := time.Now()
 	ret.Took = int(time.Since(startTime) / time.Millisecond)
 
-	fmt.Println(ret)
+	fmt.Println("[+] count:",ret.Count)
 
 }
 
