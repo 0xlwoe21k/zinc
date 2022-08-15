@@ -63,7 +63,7 @@ var (
 
 func init()  {
 
-	flag.StringVar(&bulk_path,"bp","","bulk import data path")
+	flag.StringVar(&bulk_path,"bulkpath","","bulk import data path")
 	flag.StringVar(&version,"version","","version")
 	flag.StringVar(&index,"index","","index")
 	flag.BoolVar(&server,"server",false,"server")
