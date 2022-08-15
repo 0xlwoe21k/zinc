@@ -17,7 +17,15 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
+	"github.com/getsentry/sentry-go"
+	"github.com/gin-gonic/gin"
+	"github.com/pyroscope-io/client/pyroscope"
+	"github.com/rs/zerolog/log"
+	"github.com/zinclabs/zinc/pkg/handlers/document"
+	"github.com/zinclabs/zinc/pkg/metadata"
+	"github.com/zinclabs/zinc/pkg/routes"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,16 +33,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/getsentry/sentry-go"
-	"github.com/gin-gonic/gin"
-	"github.com/pyroscope-io/client/pyroscope"
-	"github.com/rs/zerolog/log"
-
 	"github.com/zinclabs/zinc/pkg/config"
 	"github.com/zinclabs/zinc/pkg/core"
 	"github.com/zinclabs/zinc/pkg/meta"
-	"github.com/zinclabs/zinc/pkg/metadata"
-	"github.com/zinclabs/zinc/pkg/routes"
 )
 
 // @title           Zinc Search engine API
@@ -52,12 +53,63 @@ import (
 // @host            localhost:4080
 // @BasePath        /
 // @schemes http https
+
+var (
+	bulk_path = ""
+	version = ""
+	index = ""
+	server = false
+)
+
+func init()  {
+
+	flag.StringVar(&bulk_path,"bp","","bulk import data path")
+	flag.StringVar(&version,"version","","version")
+	flag.StringVar(&index,"index","","index")
+	flag.BoolVar(&server,"server",false,"server")
+
+	flag.Parse()
+}
+
+
 func main() {
 	// Version
-	if len(os.Args) > 1 && os.Args[1] == "version" {
+	if version != ""{
 		fmt.Printf("zinc version %s\n", meta.Version)
 		os.Exit(0)
 	}
+
+	if bulk_path != "" && index != ""{
+		custion_bulk_import(index,bulk_path)
+		os.Exit(0)
+	}
+
+	if server {
+		start_server()
+	}
+
+	flag.PrintDefaults()
+}
+
+func custion_bulk_import(target string,bulk_path string)  {
+	in,err := os.OpenFile(bulk_path,os.O_RDONLY,0777)
+	if err != nil{
+		fmt.Println(err)
+		os.Exit(0)
+	}
+	ret, err := document.BulkWorker(target,in)
+	if err != nil {
+		ret.Error = err.Error()
+	}
+
+	startTime := time.Now()
+	ret.Took = int(time.Since(startTime) / time.Millisecond)
+
+	fmt.Println(ret)
+
+}
+
+func start_server()  {
 	log.Info().Msgf("Starting Zinc %s", meta.Version)
 
 	// Initialize telemetry
