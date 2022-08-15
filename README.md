@@ -1,3 +1,5 @@
+can't run zinc web druing use cli .
+
 ### 0x1 new CLI feature
 new CLI feature. that can import data by CLI not http.
 ```
